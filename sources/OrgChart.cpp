@@ -41,8 +41,8 @@ namespace ariel
     }
     // move constructor - copy constructor & delete other
     OrgChart::Node::Node(Node &&other) noexcept
-        : name(std::move(other.name)),
-          children(std::move(other.children)),
+        : name(move(other.name)),
+          children(move(other.children)),
           next(other.next),
           next_rev(other.next_rev),
           next_pre(other.next_pre) {}
@@ -50,16 +50,16 @@ namespace ariel
     OrgChart::Node &OrgChart::Node::operator=(Node &&other) noexcept
     {
         this->name = other.name;
-        std::vector<Node *> v;
+        vector<Node *> tmp;
         for (Node *child : other.children)
         {
-            v.push_back(child);
+            tmp.push_back(child);
         }
-        this->children = v;
+        this->children = tmp;
         this->next = other.next;
         this->next_rev = other.next_rev;
         this->next_pre = other.next_pre;
-        std::move(other.name);
+        move(other.name);
         return *this;
     }
 
@@ -173,7 +173,6 @@ namespace ariel
         while (!q.empty())
         {
             tmp = q.front();
-            cout << tmp->name << endl;
             q.pop();
             for (Node *child : tmp->children)
             {
@@ -260,21 +259,17 @@ namespace ariel
         current->next_rev = nullptr;
         Node *prev = current;
         current = next_;
-        // cout <<current->name<< endl;
-        // cout <<current->next_rev->name<< endl;
+
         while (current != nullptr)
         {
-            // cout <<current->next_rev->name<< endl;
             next_ = current->next_rev;
             current->next_rev = prev;
             prev = current;
             current = next_;
         }
-        // cout<< prev->name << endl;
-        //  cout<<current->name << endl;
+
         this->curr = prev;
-        // cout << "root: " << curr->name <<endl;
-        // cout << "root next" << curr->next_rev->name << endl;
+
     }
 
     OrgChart::Iterator::~Iterator()
@@ -318,6 +313,11 @@ namespace ariel
     }
     OrgChart &OrgChart::add_root(string const &name)
     {
+        if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_ .") != string::npos 
+        || name.empty())
+        {
+            throw invalid_argument("Invalid name");
+        }
         if (this->root != nullptr)
         {
             this->root->name = name;
@@ -330,6 +330,12 @@ namespace ariel
     }
     OrgChart &OrgChart::add_sub(string const &father, string const &child)
     {
+        if (father.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_. ") != string::npos
+        ||child.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_. ") != string::npos
+        || father.empty() || child.empty())
+        {
+            throw invalid_argument("Invalid name");
+        }  
         if (this->root == nullptr)
         {
             throw out_of_range("OrgChart is null");
@@ -337,7 +343,7 @@ namespace ariel
 
         if (!recursive_sub(*(this->root), father, child))
         {
-            throw runtime_error("didnt found this father");
+            throw invalid_argument("didnt found this father");
         }
 
         return *this;
@@ -365,7 +371,7 @@ namespace ariel
     {
         if (this->root == nullptr)
         {
-            throw invalid_argument("orgChart is empty");
+            throw out_of_range("orgChart is empty");
         }
         return OrgChart::Iterator(Iterator::Type(1), this->root);
     }
@@ -373,7 +379,7 @@ namespace ariel
     {
         if (this->root == nullptr)
         {
-            throw invalid_argument("orgChart is empty");
+            throw out_of_range("orgChart is empty");
         }
         return OrgChart::Iterator(nullptr);
     }
@@ -381,7 +387,7 @@ namespace ariel
     {
         if (this->root == nullptr)
         {
-            throw invalid_argument("orgChart is empty");
+            throw out_of_range("orgChart is empty");
         }
         return OrgChart::Iterator(Iterator::Type(2), this->root);
     }
@@ -389,7 +395,7 @@ namespace ariel
     {
         if (this->root == nullptr)
         {
-            throw invalid_argument("orgChart is empty");
+            throw out_of_range("orgChart is empty");
         }
         return OrgChart::Iterator(nullptr);
     }
@@ -397,7 +403,7 @@ namespace ariel
     {
         if (this->root == nullptr)
         {
-            throw invalid_argument("orgChart is empty");
+            throw out_of_range("orgChart is empty");
         }
         return OrgChart::Iterator(Iterator::Type(3), this->root);
     }
@@ -405,7 +411,7 @@ namespace ariel
     {
         if (this->root == nullptr)
         {
-            throw invalid_argument("orgChart is empty");
+            throw out_of_range("orgChart is empty");
         }
         return OrgChart::Iterator(nullptr);
     }
@@ -413,7 +419,7 @@ namespace ariel
     {
         if (this->root == nullptr)
         {
-            throw invalid_argument("orgChart is empty");
+            throw out_of_range("orgChart is empty");
         }
         return begin_level_order();
     }
@@ -421,37 +427,12 @@ namespace ariel
     {
         if (this->root == nullptr)
         {
-            throw invalid_argument("orgChart is empty");
+            throw out_of_range("orgChart is empty");
         }
         return end_level_order();
     }
     std::ostream &operator<<(std::ostream &out, const OrgChart &org)
     {
-        deque<OrgChart::Node *> q;
-        if (org.root == nullptr)
-        {
-            throw std::out_of_range("OrgChart is empty");
-        }
-        q.push_back(org.root);
-        while (!q.empty())
-        {
-            size_t len = q.size();
-            for (size_t i = 0; i < len; i++)
-            {
-                OrgChart::Node *tmp = q.front();
-                out << tmp->name << "  ";
-                if (!tmp->children.empty())
-                {
-                    for (OrgChart::Node *child : tmp->children)
-                    {
-                        q.push_back(child);
-                    }
-                }
-                q.pop_front();
-            }
-            out << "\n";
-        }
-
         return out;
     }
 
